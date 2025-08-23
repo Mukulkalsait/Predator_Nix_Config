@@ -1,0 +1,135 @@
+{ config, pkgs, ... }:
+{
+imports = [ ./hardware-configuration.nix ];
+
+
+# Flakes + Nix CLI
+nix.settings.experimental-features = [ "nix-command" "flakes" ];
+
+
+# Boot
+boot.loader.systemd-boot.enable = true;
+boot.loader.efi.canTouchEfiVariables = true;
+# NVIDIA DRM KMS for Wayland
+boot.kernelParams = [ "nvidia_drm.modeset=1" ];
+
+
+# Host + Network
+networking.hostName = "mukul-nixos";
+networking.networkmanager.enable = true;
+
+
+# Locale/Time
+time.timeZone = "Asia/Kolkata";
+i18n.defaultLocale = "en_US.UTF-8";
+
+
+# Hyprland (from nixpkgs)
+programs.hyprland = {
+enable = true;
+xwayland.enable = true;
+};
+
+
+# Login (no full display manager)
+services.greetd = {
+enable = true;
+settings.default_session = {
+command = "${pkgs.greetd.tuigreet}/bin/tuigreet --time --cmd Hyprland";
+user = "greeter";
+};
+};
+
+
+# Audio: PipeWire
+security.rtkit.enable = true;
+services.pipewire = {
+enable = true;
+alsa.enable = true;
+alsa.support32Bit = true;
+pulse.enable = true;
+jack.enable = true;
+};
+
+
+# NVIDIA (proprietary)
+services.xserver.videoDrivers = [ "nvidia" ];
+hardware.graphics = {
+enable = true;
+enable32Bit = true;
+};
+hardware.nvidia = {
+modesetting.enable = true;
+powerManagement.enable = false;
+nvidiaSettings = true;
+open = false;
+package = config.boot.kernelPackages.nvidiaPackages.stable;
+};
+
+
+# Portals for screenshots/screencast etc.
+xdg.portal = {
+enable = true;
+extraPortals = [ pkgs.xdg-desktop-portal-gtk pkgs.xdg-desktop-portal-hyprland ];
+};
+
+
+# Keyring + Polkit agent support
+services.gnome.gnome-keyring.enable = true;
+services.polkit.enable = true;
+security.pam.services.greetd.enableGnomeKeyring = true;
+
+
+# User
+users.users.mukul = {
+isNormalUser = true;
+description = "Mukul";
+extraGroups = [ "networkmanager" "wheel" "audio" "video" ];
+shell = pkgs.zsh;
+};
+
+
+# Unfree ok
+nixpkgs.config.allowUnfree = true;
+
+
+# Minimal, safe base packages (no celestial/qs deps)
+environment.systemPackages = with pkgs; [
+git curl wget
+neovim
+zsh starship
+wl-clipboard grim slurp
+hyprpaper
+wofi
+dunst
+brightnessctl playerctl pavucontrol
+networkmanagerapplet
+greetd.tuigreet
+];
+
+
+programs.zsh.enable = true;
+
+
+# Fonts (lean set)
+fonts = {
+enableDefaultPackages = true;
+packages = with pkgs; [
+nerd-fonts.jetbrains-mono
+nerd-fonts.fira-code
+noto-fonts
+noto-fonts-emoji
+];
+};
+
+
+# Helpful Wayland/NVIDIA env
+environment.sessionVariables = {
+NIXOS_OZONE_WL = "1"; # Wayland hints for Chromium/Electron apps
+WLR_NO_HARDWARE_CURSORS = "1"; # avoids cursor glitches on some NVIDIA setups
+__GLX_VENDOR_LIBRARY_NAME = "nvidia"; # correct GLX vendor
+};
+
+
+system.stateVersion = "25.05"; # do not change once set
+}
