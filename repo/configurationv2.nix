@@ -128,5 +128,5 @@
   # Security
   security.pam.services.greetd.enableGnomeKeyring = true;
 
-  system.stateVersion = "24.05";
+  system.stateVersion = "25.05";
 }
