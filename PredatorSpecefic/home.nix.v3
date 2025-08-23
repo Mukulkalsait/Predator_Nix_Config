@@ -1,0 +1,141 @@
+{ config, pkgs, ... }:
+{
+home.username = "mukul";
+home.homeDirectory = "/home/mukul";
+home.stateVersion = "25.05";
+
+
+programs.home-manager.enable = true;
+
+
+# Minimal user packages (keep it simple for now)
+home.packages = with pkgs; [
+kitty
+wofi
+dunst
+hyprpaper
+wl-clipboard
+grim slurp
+brightnessctl playerctl pavucontrol
+cliphist
+];
+
+
+# Git
+programs.git = {
+enable = true;
+userName = "mukul_dk_nix";
+userEmail = "replace-me@example.com";
+};
+
+
+# Zsh with **working** completion, no weird aliases
+programs.zsh = {
+enable = true;
+enableCompletion = true;
+autosuggestion.enable = true;
+syntaxHighlighting.enable = true;
+# Keep aliases sane — do NOT override `cd`
+shellAliases = {
+ll = "eza -la";
+ls = "eza";
+cat = "bat";
+grep = "rg";
+# no `cd = "z"` (this breaks tab completion behaviours)
+};
+oh-my-zsh = {
+enable = true;
+plugins = [ "git" "sudo" ];
+theme = "robbyrussell";
+};
+};
+
+
+programs.fzf = {
+enable = true;
+enableZshIntegration = true;
+};
+
+
+programs.zoxide = {
+enable = true;
+enableZshIntegration = true; # provides `z` command without touching `cd`
+};
+
+
+programs.starship = {
+enable = true;
+enableZshIntegration = true;
+};
+
+
+# Kitty
+programs.kitty = {
+enable = true;
+font = { name = "JetBrainsMono Nerd Font"; size = 12; };
+settings = {
+background_opacity = "0.95";
+confirm_os_window_close = 0;
+};
+};
+
+
+# Hyprland: minimal, no bar yet (we'll add Waybar later once base is stable)
+wayland.windowManager.hyprland = {
+enable = true;
+settings = {
+monitor = ",preferred,auto,1";
+
+
+env = [
+"XCURSOR_SIZE,24"
+"QT_QPA_PLATFORM,wayland"
+"MOZ_ENABLE_WAYLAND,1"
+"XDG_SESSION_TYPE,wayland"
+"XDG_CURRENT_DESKTOP,Hyprland"
+];
+
+
+input = { kb_layout = "us"; follow_mouse = 1; touchpad = { natural_scroll = true; }; };
+
+
+general = { gaps_in = 5; gaps_out = 10; border_size = 2; layout = "dwindle"; };
+decoration = { rounding = 8; drop_shadow = true; };
+animations = { enabled = true; };
+
+
+bind = [
+"SUPER, RETURN, exec, kitty"
+"SUPER, R, exec, wofi --show drun"
+"SUPER, Q, killactive"
+"SUPER, V, togglefloating"
+"SUPER, M, exit"
+
+
+"SUPER, left, movefocus, l"
+"SUPER, right, movefocus, r"
+"SUPER, up, movefocus, u"
+"SUPER, down, movefocus, d"
+
+
+"SUPER, 1, workspace, 1"
+"SUPER, 2, workspace, 2"
+"SUPER, 3, workspace, 3"
+"SUPER, 4, workspace, 4"
+];
+
+
+bindm = [
+"SUPER, mouse:272, movewindow"
+"SUPER, mouse:273, resizewindow"
+];
+
+
+# Start only essentials
+exec-once = [
+"${pkgs.dunst}/bin/dunst"
+"${pkgs.wl-clipboard}/bin/wl-paste --watch ${pkgs.cliphist}/bin/cliphist store"
+# polkit agent for auth prompts
+"${pkgs.polkit_gnome}/libexec/polkit-gnome-authentication-agent-1"
+];
+}
