@@ -1,0 +1,79 @@
+# /etc/nixos/flake.nix
+{
+  description = "NixOS configuration with Home Manager";
+
+  inputs = {
+    # Nixpkgs for the NixOS system configuration
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-25.05";
+
+    # Home Manager for user configuration
+    home-manager = {
+      url = "github:nix-community/home-manager/release-25.05";
+      inputs.nixpkgs.follows = "nixpkgs"; # Use the same nixpkgs version for consistency
+    };
+  };
+
+  outputs = inputs@{ self, nixpkgs, home-manager, ... }: {
+    # NixOS system configurations
+    nixosConfigurations = {
+      # Replace 'your-hostname' with the actual name of your machine
+      your-hostname = nixpkgs.lib.nixosSystem {
+        system = "x86_64-linux"; # Or your system architecture
+        modules = [
+          # Import your NixOS configuration (e.g., ./configuration.nix)
+          ./configuration.nix
+
+          # Integrate Home Manager into your NixOS configuration
+          home-manager.nixosModules.home-manager
+          {
+            home-manager.useGlobalPkgs = true;
+            home-manager.useUserPackages = true;
+
+            # Link to your user's Home Manager configuration file
+            # Replace 'your-username' with your actual username
+            home-manager.users.your-username = ./home.nix;
+
+            # Pass inputs to Home Manager modules if needed
+            home-manager.extraSpecialArgs = {
+              inherit inputs;
+            };
+          }
+        ];
+      };
+    };
+  };
+}
+
+
+
+
+{
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+
+    home-manager = {
+      url = "github:nix-community/home-manager";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    hyprland.url = "github:hyprwm/Hyprland";
+  };
+
+  outputs = {nixpkgs, home-manager, hyprland, ...}: {
+    homeConfigurations."user@hostname" = home-manager.lib.homeManagerConfiguration {
+      pkgs = nixpkgs.legacyPackages.x86_64-linux;
+
+      modules = [
+        {
+          wayland.windowManager.hyprland = {
+            enable = true;
+            # set the flake package
+            package = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland;
+            portalPackage = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.xdg-desktop-portal-hyprland;
+          };
+        }
+        # ...
+      ];
+    };
+  };
+}
